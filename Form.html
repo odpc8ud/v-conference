@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="th">
+  <head>
+    <base target="_top" />
+    <?!= include('Style'); ?>
+  </head>
+  <body>
+    <div class="topbar">
+      <div class="brand">
+        <div class="brand-mark">ODPC8</div>
+        <div class="brand-text">
+          <div class="title">แจ้งขอใช้ห้องประชุม</div>
+          <div class="subtitle">
+            สำนักงานป้องกันควบคุมโรคที่ 8 จังหวัดอุดรธานี
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <a class="topbar-link" href="<?= baseUrl ?>?page=schedule">ตารางประชุม</a>
+        <a class="topbar-link" href="<?= baseUrl ?>?page=admin">สำหรับเจ้าหน้าที่</a>
+      </div>
+    </div>
+
+    <div class="container">
+      <div id="formView">
+        <div class="intro">
+          <h1>รายละเอียดการขอใช้ห้องประชุม</h1>
+          <p>
+            กรุณาตรวจสอบการจองห้องประชุมให้เรียบร้อยก่อน
+            <a href="<?= roomBookingLink ?>" target="_blank"
+              >คลิกจองห้องประชุม</a
+            >
+          </p>
+        </div>
+
+        <form class="panel" id="requestForm">
+          <div class="field-group required">
+            <label class="field-label"
+              >ผู้ขอใช้งาน<span class="req">*</span></label
+            >
+            <input type="text" id="requester" required />
+          </div>
+
+          <div class="field-group required">
+            <label class="field-label">อีเมล<span class="req">*</span></label>
+            <div class="field-hint">
+              ใช้สำหรับส่ง HOST ID / Password / ลิงก์ประชุม
+              กลับไปให้ท่านหลังทีมงานดำเนินการเสร็จ
+            </div>
+            <input type="email" id="email" required />
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">ชื่อเล่น</label>
+            <input type="text" id="nickname" />
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">ช่องทางตอบกลับอื่นๆ</label>
+            <div class="field-hint">
+              ไม่บังคับเลือก — ทีมงานจะติดต่อกลับผ่านอีเมลเป็นหลัก
+            </div>
+            <div class="option-grid" id="channelOptions"></div>
+            <div class="other-inline">
+              <input
+                type="text"
+                id="channelOther"
+                placeholder="ระบุช่องทางอื่นๆ (ถ้ามี)"
+              />
+            </div>
+          </div>
+
+          <div class="field-group required">
+            <label class="field-label"
+              >กลุ่มงาน<span class="req">*</span></label
+            >
+            <select id="group" required>
+              <option value="" disabled selected>เลือกกลุ่มงาน</option>
+            </select>
+          </div>
+
+          <div class="field-group required">
+            <label class="field-label"
+              >ชื่อการประชุม<span class="req">*</span></label
+            >
+            <textarea id="title" required></textarea>
+          </div>
+
+          <div class="field-group required">
+            <label class="field-label"
+              >รูปแบบการประชุม (IT Support)<span class="req">*</span></label
+            >
+            <div class="option-grid" id="itSupportOptions"></div>
+          </div>
+
+          <div class="field-group required">
+            <label class="field-label"
+              >สถานที่จัดประชุม<span class="req">*</span></label
+            >
+            <div class="field-hint">
+              กรุณาตรวจสอบการจองห้องประชุมให้เรียบร้อยก่อน
+              <a href="<?= roomBookingLink ?>" target="_blank"
+                >คลิกจองห้องประชุม</a
+              >
+            </div>
+            <div class="option-grid" id="roomOptions"></div>
+            <div class="other-inline">
+              <input
+                type="text"
+                id="roomOther"
+                placeholder="ระบุสถานที่อื่นๆ (ถ้าเลือก อื่นๆ)"
+              />
+            </div>
+          </div>
+
+          <div class="field-group required">
+            <div class="row-2">
+              <div>
+                <label class="field-label"
+                  >วันที่ประชุม<span class="req">*</span></label
+                >
+                <input type="date" id="meetingDate" lang="th" required />
+              </div>
+              <div>
+                <label class="field-label"
+                  >วันสิ้นสุดประชุม<span class="req">*</span></label
+                >
+                <input type="date" id="endDate" lang="th" required />
+              </div>
+            </div>
+          </div>
+
+          <div class="field-group required">
+            <label class="field-label"
+              >เวลาการประชุม<span class="req">*</span></label
+            >
+            <div class="field-hint">ตัวอย่าง 08.30 - 16.30</div>
+            <input
+              type="text"
+              id="meetingTime"
+              placeholder="08.30 - 16.30"
+              required
+            />
+          </div>
+
+          <div class="field-group required">
+            <label class="field-label"
+              >จำนวนผู้เข้าร่วมประชุม<span class="req">*</span></label
+            >
+            <div class="field-hint">
+              ระบบ Zoom ไม่เกิน 100 คน, ระบบ WebEx ไม่เกิน 1000 คน
+            </div>
+            <input type="text" id="attendees" required />
+          </div>
+
+          <div class="submit-bar">
+            <button type="submit" class="btn-primary" id="submitBtn">
+              ส่งคำขอ
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <div id="successView" class="panel success-card hidden">
+        <div class="icon">✓</div>
+        <h2>ส่งคำขอเรียบร้อยแล้ว</h2>
+        <p id="successMessage">ทีมงานจะดำเนินการตรวจสอบและแจ้งกลับ</p>
+        <div style="margin-top: 20px">
+          <button class="btn-secondary" id="newRequestBtn">
+            ส่งคำขอใหม่อีกครั้ง
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+      function todayStr() {
+        const d = new Date();
+        d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); // ปรับตาม timezone เครื่องผู้ใช้ ไม่ใช้ UTC ตรงๆ
+        return d.toISOString().slice(0, 10);
+      }
+
+      (function setupDateGuards() {
+        const meetingDateInput = document.getElementById("meetingDate");
+        const endDateInput = document.getElementById("endDate");
+        const today = todayStr();
+
+        // ล็อกไม่ให้เลือกวันย้อนหลังจากวันนี้ในตัวเลือกวันที่ของเบราว์เซอร์เลย
+        meetingDateInput.min = today;
+        endDateInput.min = today;
+
+        meetingDateInput.addEventListener("change", function () {
+          // วันสิ้นสุดต้องไม่ก่อนวันที่ประชุมที่เพิ่งเลือก
+          endDateInput.min = this.value || today;
+          if (endDateInput.value && endDateInput.value < this.value) {
+            endDateInput.value = this.value;
+          }
+        });
+      })();
+
+      let META = { groups: [], itSupportOptions: [], rooms: [], channels: [] };
+
+      function renderRadioGroup(containerId, name, options, includeOther) {
+        const container = document.getElementById(containerId);
+        container.innerHTML =
+          options
+            .map(
+              (opt, i) => `
+        <label class="option-row">
+          <input type="radio" name="${name}" value="${opt}">
+          <span>${opt}</span>
+        </label>
+      `,
+            )
+            .join("") +
+          (includeOther
+            ? `
+        <label class="option-row">
+          <input type="radio" name="${name}" value="อื่นๆ">
+          <span>อื่นๆ</span>
+        </label>
+      `
+            : "");
+      }
+
+      function renderCheckboxGroup(containerId, name, options) {
+        const container = document.getElementById(containerId);
+        container.innerHTML = options
+          .map(
+            (opt) => `
+        <label class="option-row">
+          <input type="checkbox" name="${name}" value="${opt}">
+          <span>${opt}</span>
+        </label>
+      `,
+          )
+          .join("");
+      }
+
+      function renderSelect(selectId, options) {
+        const select = document.getElementById(selectId);
+        options.forEach((opt) => {
+          const el = document.createElement("option");
+          el.value = opt;
+          el.textContent = opt;
+          select.appendChild(el);
+        });
+      }
+
+      function showToast(message, type) {
+        const toast = document.getElementById("toast");
+        toast.textContent = message;
+        toast.className = "toast show " + (type || "");
+        setTimeout(() => {
+          toast.className = "toast " + (type || "");
+        }, 3500);
+      }
+
+      function getCheckedValues(name) {
+        return Array.from(
+          document.querySelectorAll(`input[name="${name}"]:checked`),
+        ).map((el) => el.value);
+      }
+
+      function getRadioValue(name) {
+        const el = document.querySelector(`input[name="${name}"]:checked`);
+        return el ? el.value : "";
+      }
+
+      document
+        .getElementById("requestForm")
+        .addEventListener("submit", function (e) {
+          e.preventDefault();
+
+          const payload = {
+            requester: document.getElementById("requester").value.trim(),
+            email: document.getElementById("email").value.trim(),
+            nickname: document.getElementById("nickname").value.trim(),
+            channels: getCheckedValues("channel"),
+            channelOther: document.getElementById("channelOther").value.trim(),
+            group: document.getElementById("group").value,
+            title: document.getElementById("title").value.trim(),
+            itSupport: getRadioValue("itSupport"),
+            room: getRadioValue("room"),
+            roomOther: document.getElementById("roomOther").value.trim(),
+            meetingDate: document.getElementById("meetingDate").value,
+            endDate: document.getElementById("endDate").value,
+            meetingTime: document.getElementById("meetingTime").value.trim(),
+            attendees: document.getElementById("attendees").value.trim(),
+          };
+
+          const today = todayStr();
+          if (payload.meetingDate && payload.meetingDate < today) {
+            showToast(
+              "ไม่สามารถเลือกวันที่ประชุมย้อนหลังจากวันนี้ได้",
+              "error",
+            );
+            return;
+          }
+          if (
+            payload.meetingDate &&
+            payload.endDate &&
+            payload.endDate < payload.meetingDate
+          ) {
+            showToast("วันสิ้นสุดประชุมต้องไม่ก่อนวันที่ประชุม", "error");
+            return;
+          }
+
+          const btn = document.getElementById("submitBtn");
+          btn.disabled = true;
+          btn.innerHTML = '<span class="spinner"></span>กำลังส่ง...';
+
+          google.script.run
+            .withSuccessHandler(function (res) {
+              btn.disabled = false;
+              btn.textContent = "ส่งคำขอ";
+              if (res.success) {
+                document.getElementById("formView").classList.add("hidden");
+                document
+                  .getElementById("successView")
+                  .classList.remove("hidden");
+                document.getElementById("successMessage").textContent =
+                  res.message;
+              } else {
+                showToast(res.message, "error");
+              }
+            })
+            .withFailureHandler(function (err) {
+              btn.disabled = false;
+              btn.textContent = "ส่งคำขอ";
+              showToast("เกิดข้อผิดพลาด: " + err.message, "error");
+            })
+            .submitRequest(payload);
+        });
+
+      document
+        .getElementById("newRequestBtn")
+        .addEventListener("click", function () {
+          document.getElementById("requestForm").reset();
+          document.getElementById("successView").classList.add("hidden");
+          document.getElementById("formView").classList.remove("hidden");
+        });
+
+      google.script.run
+        .withSuccessHandler(function (meta) {
+          META = meta;
+          renderCheckboxGroup("channelOptions", "channel", meta.channels);
+          renderSelect("group", meta.groups);
+          renderRadioGroup(
+            "itSupportOptions",
+            "itSupport",
+            meta.itSupportOptions,
+            false,
+          );
+          renderRadioGroup("roomOptions", "room", meta.rooms, true);
+        })
+        .getFormMeta();
+    </script>
+  </body>
+</html>

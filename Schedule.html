@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="th">
+  <head>
+    <base target="_top" />
+    <?!= include('Style'); ?>
+    <style>
+      .table-wrap table { min-width: 760px; }
+      tbody tr.today { background: var(--color-primary-soft); }
+    </style>
+  </head>
+  <body>
+    <div class="topbar">
+      <div class="brand">
+        <div class="brand-mark">ODPC8</div>
+        <div class="brand-text">
+          <div class="title">ตารางการประชุม</div>
+          <div class="subtitle">สำนักงานป้องกันควบคุมโรคที่ 8 จังหวัดอุดรธานี</div>
+        </div>
+      </div>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap">
+        <a class="topbar-link" href="<?= baseUrl ?>?page=form">แจ้งขอใช้ห้องประชุม</a>
+        <a class="topbar-link" href="<?= baseUrl ?>?page=admin">สำหรับเจ้าหน้าที่</a>
+      </div>
+    </div>
+
+    <div class="container wide">
+      <div class="toolbar">
+        <div class="filter-pills" id="scopePills"></div>
+        <input type="text" class="search-box" id="searchBox"
+          placeholder="ค้นหาชื่อการประชุม / กลุ่มงาน / ห้องประชุม" />
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>วันที่</th><th>เวลา</th><th>ชื่อการประชุม</th><th>กลุ่มงาน</th>
+              <th>ห้องประชุม</th><th>ระบบ</th><th>สถานะ</th>
+            </tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+        <div class="empty-state hidden" id="emptyState">ไม่พบการประชุมที่ตรงกับเงื่อนไข</div>
+      </div>
+    </div>
+    <div class="toast" id="toast"></div>
+
+    <script>
+      const SCOPES = [
+        { key: "upcoming", label: "วันนี้และต่อจากนี้" },
+        { key: "all", label: "ทั้งหมด" },
+      ];
+      let ALL = [], scope = "upcoming", q = "";
+
+      function esc(s) {
+        return String(s || "").replace(/[&<>"']/g, (c) =>
+          ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+      }
+      function todayIso() {
+        const d = new Date();
+        d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+        return d.toISOString().slice(0, 10);
+      }
+      function thDate(iso) {
+        const p = iso.split("-");
+        return p[2] + "/" + p[1] + "/" + (Number(p[0]) + 543);
+      }
+      function renderPills() {
+        const el = document.getElementById("scopePills");
+        el.innerHTML = SCOPES.map((s) =>
+          `<button type="button" class="pill ${s.key === scope ? "active" : ""}" data-k="${s.key}">${s.label}</button>`).join("");
+        el.querySelectorAll(".pill").forEach((b) => b.addEventListener("click", () => {
+          scope = b.dataset.k; render();
+        }));
+      }
+      function render() {
+        renderPills();
+        const t = todayIso();
+        let rows = ALL;
+        if (scope === "upcoming") rows = rows.filter((r) => r.endIso >= t);
+        if (q) rows = rows.filter((r) =>
+          (r.title + " " + r.group + " " + r.room).toLowerCase().indexOf(q) !== -1);
+        document.getElementById("emptyState").classList.toggle("hidden", rows.length > 0);
+        document.getElementById("rows").innerHTML = rows.map((r) => {
+          const date = r.startIso === r.endIso ? thDate(r.startIso) : thDate(r.startIso) + " - " + thDate(r.endIso);
+          const isToday = r.startIso <= t && t <= r.endIso;
+          const cls = r.bookingStatus === "อนุมัติ" ? "approved" : "pending";
+          return `<tr class="${isToday ? "today" : ""}">
+            <td>${esc(date)}${isToday ? ' <span class="badge approved">วันนี้</span>' : ""}</td>
+            <td>${esc(r.meetingTime)}</td><td>${esc(r.title)}</td><td>${esc(r.group)}</td>
+            <td>${esc(r.room)}</td><td>${esc(r.meetingRoom) || "-"}</td>
+            <td><span class="badge ${cls}">${esc(r.bookingStatus)}</span></td></tr>`;
+        }).join("");
+      }
+      document.getElementById("searchBox").addEventListener("input", function () {
+        q = this.value.trim().toLowerCase(); render();
+      });
+      renderPills();
+      google.script.run
+        .withSuccessHandler((rows) => { ALL = rows; render(); })
+        .withFailureHandler((e) => {
+          const t = document.getElementById("toast");
+          t.textContent = "โหลดข้อมูลไม่สำเร็จ: " + e.message;
+          t.className = "toast show error";
+        })
+        .getPublicSchedule();
+    </script>
+  </body>
+</html>

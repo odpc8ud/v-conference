@@ -1,0 +1,1109 @@
+<!doctype html>
+<html>
+  <head>
+    <base target="_top" />
+    <?!= include('Style'); ?>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <style>
+      .tabs {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 16px;
+      }
+      .dash-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-bottom: 16px;
+      }
+      .dash-head h2 {
+        font-size: 21px;
+      }
+      .dash-period {
+        font-size: 15px;
+        font-weight: 500;
+        color: var(--color-primary);
+        margin-top: 2px;
+      }
+      .dash-filters {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      .dash-filters select {
+        width: auto;
+        min-width: 120px;
+      }
+      .kpi-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+      .kpi {
+        background: #fff;
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+        padding: 14px 18px;
+        box-shadow: var(--shadow-card);
+      }
+      .kpi .l {
+        font-size: 13px;
+        color: var(--color-text-muted);
+      }
+      .kpi .n {
+        font-size: 34px;
+        font-weight: 700;
+        line-height: 1.15;
+      }
+      .kpi.main {
+        background: var(--color-primary);
+        border-color: var(--color-primary);
+      }
+      .kpi.main .l {
+        color: rgba(255, 255, 255, 0.8);
+      }
+      .kpi.main .n {
+        color: #fff;
+      }
+      .kpi.ok .n {
+        color: var(--color-success);
+      }
+      .kpi.wait .n {
+        color: var(--color-pending);
+      }
+      .kpi.bad .n {
+        color: var(--color-danger);
+      }
+      .dash-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+      }
+      .dash-card {
+        background: #fff;
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-card);
+        padding: 14px 16px;
+      }
+      .dash-card.wide {
+        grid-column: 1 / -1;
+      }
+      .dash-card h4 {
+        margin: 0 0 10px;
+        font-size: 14.5px;
+        color: var(--color-primary-dark);
+      }
+      .dash-card .cv {
+        position: relative;
+        height: 280px;
+      }
+      .dash-card.wide .cv {
+        height: 340px;
+      }
+      @media (max-width: 800px) {
+        .dash-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+      @media print {
+        .topbar,
+        .tabs,
+        .dash-filters,
+        .toast,
+        #logoutBtn {
+          display: none !important;
+        }
+        html,
+        body {
+          background: #fff;
+        }
+        .dash-card,
+        .kpi {
+          box-shadow: none;
+          break-inside: avoid;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="topbar">
+      <div class="brand">
+        <div class="brand-mark">ODPC8</div>
+        <div class="brand-text">
+          <div class="title">จัดการคำขอใช้ห้องประชุม</div>
+          <div class="subtitle">สำหรับเจ้าหน้าที่ผู้ดูแลระบบ</div>
+        </div>
+      </div>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap">
+        <a class="topbar-link" href="<?= baseUrl ?>?page=schedule"
+          >ตารางประชุม</a
+        >
+        <a class="topbar-link" href="<?= baseUrl ?>?page=form"
+          >หน้าแจ้งขอใช้ห้องประชุม</a
+        >
+        <button
+          type="button"
+          class="topbar-link hidden"
+          id="logoutBtn"
+          style="background: transparent; font-family: inherit; cursor: pointer"
+        >
+          ออกจากระบบ
+        </button>
+      </div>
+    </div>
+
+    <div class="container wide">
+      <div
+        id="loginView"
+        class="panel"
+        style="max-width: 420px; margin: 40px auto"
+      >
+        <div class="field-group"><h3>เข้าสู่ระบบเจ้าหน้าที่</h3></div>
+        <div class="field-group">
+          <label class="field-label">ชื่อผู้ใช้</label>
+          <input type="text" id="loginUser" autocomplete="username" />
+        </div>
+        <div class="field-group">
+          <label class="field-label">รหัสผ่าน</label>
+          <input
+            type="password"
+            id="loginPass"
+            autocomplete="current-password"
+          />
+        </div>
+        <div class="submit-bar">
+          <button type="button" class="btn-primary" id="loginBtn">
+            เข้าสู่ระบบ
+          </button>
+        </div>
+      </div>
+
+      <div id="adminView" class="hidden">
+        <div class="tabs">
+          <button type="button" class="pill active" id="tabList">
+            รายการคำขอ
+          </button>
+          <button type="button" class="pill" id="tabDash">
+            แดชบอร์ดผู้บริหาร
+          </button>
+        </div>
+        <div id="listPane">
+          <div class="toolbar">
+            <div class="filter-row">
+              <span class="filter-label">สถานะการจอง</span>
+              <div class="filter-pills" id="statusPills"></div>
+            </div>
+            <div class="filter-row">
+              <span class="filter-label">สถานะกิจกรรม</span>
+              <div class="filter-pills" id="activityPills"></div>
+            </div>
+            <input
+              type="text"
+              class="search-box"
+              id="searchBox"
+              placeholder="ค้นหาชื่อผู้ขอใช้งาน / ชื่อการประชุม / กลุ่มงาน"
+            />
+          </div>
+
+          <div class="request-list" id="requestList"></div>
+          <div class="empty-state hidden panel" id="emptyState">
+            ไม่พบรายการที่ตรงกับเงื่อนไข
+          </div>
+        </div>
+
+        <div id="dashPane" class="hidden">
+          <div class="dash-head">
+            <div>
+              <h2 id="dashTitle"></h2>
+              <div class="dash-period" id="dashPeriod"></div>
+              <div class="field-hint" id="dashAsOf"></div>
+            </div>
+            <div class="dash-filters">
+              <select id="dYear"></select>
+              <select id="dMonth"></select>
+              <select id="dGroup"></select>
+              <button type="button" class="btn-secondary" id="dashPrint">
+                🖨 พิมพ์ / บันทึก PDF
+              </button>
+            </div>
+          </div>
+          <div class="kpi-row" id="kpiRow"></div>
+          <div class="dash-grid">
+            <div class="dash-card">
+              <h4>กลุ่มงาน</h4>
+              <div class="cv"><canvas id="chGroup"></canvas></div>
+            </div>
+            <div class="dash-card">
+              <h4>ห้องประชุม</h4>
+              <div class="cv"><canvas id="chRoom"></canvas></div>
+            </div>
+            <div class="dash-card">
+              <h4>รูปแบบการประชุม</h4>
+              <div class="cv"><canvas id="chFormat"></canvas></div>
+            </div>
+            <div class="dash-card">
+              <h4>Host ID / ระบบที่ใช้</h4>
+              <div class="cv"><canvas id="chHost"></canvas></div>
+            </div>
+            <div class="dash-card wide">
+              <h4>ห้องประชุมแยกตามกลุ่มงาน</h4>
+              <div class="cv"><canvas id="chGroupRoom"></canvas></div>
+            </div>
+            <div class="dash-card">
+              <h4>สถานะการจอง</h4>
+              <div class="cv"><canvas id="chStatus"></canvas></div>
+            </div>
+            <div class="dash-card">
+              <h4>จำนวนการประชุมรายเดือน</h4>
+              <div class="cv"><canvas id="chMonth"></canvas></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-overlay hidden" id="modalOverlay">
+      <div class="modal">
+        <div class="modal-header">
+          <div>
+            <h3 id="modalTitle">รายละเอียดคำขอ</h3>
+            <div class="meta" id="modalMeta"></div>
+          </div>
+          <button class="btn-icon" id="modalClose">ปิด ✕</button>
+        </div>
+        <div class="modal-body">
+          <div>
+            <label class="field-label">อีเมลผู้ขอ</label>
+            <input type="text" id="fEmailDisplay" disabled />
+          </div>
+          <div>
+            <label class="field-label">Meeting Room</label>
+            <div class="field-hint">
+              ชื่อระบบ/ห้อง host เช่น V-Con 1, V-Con 2, Webex ODPC8 (พิมพ์เองได้
+              ไม่บังคับเลือกจากลิสต์)
+            </div>
+            <input
+              type="text"
+              id="fMeetingRoom"
+              list="meetingRoomSuggestions"
+            />
+            <datalist id="meetingRoomSuggestions"></datalist>
+          </div>
+          <div>
+            <label class="field-label">HOST ID</label>
+            <input type="text" id="fHostId" />
+          </div>
+          <div>
+            <label class="field-label">Password HOST ID</label>
+            <input type="text" id="fPassword" />
+          </div>
+          <div>
+            <label class="field-label">WebEx / Zoom Link</label>
+            <textarea id="fWebexLink"></textarea>
+          </div>
+          <div class="row-2">
+            <div>
+              <label class="field-label">สถานะการจอง</label>
+              <select id="fBookingStatus"></select>
+            </div>
+            <div>
+              <label class="field-label">สถานะกิจกรรม</label>
+              <select id="fActivityStatus"></select>
+            </div>
+          </div>
+          <div>
+            <label class="field-label">หมายเหตุ</label>
+            <textarea id="fNote"></textarea>
+          </div>
+          <div class="field-hint" id="emailSentHint"></div>
+          <label class="option-row" id="sendEmailRow">
+            <input type="checkbox" id="fSendEmail" />
+            <span>ส่งอีเมลแจ้งผลและข้อมูลนี้กลับไปหาผู้ขอทันทีที่บันทึก</span>
+          </label>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" id="modalCancel">ยกเลิก</button>
+          <button class="btn-primary" id="modalSave">บันทึกข้อมูล</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+      let CURRENT_FILTER = { status: "all", activityStatus: "all", search: "" };
+      let CURRENT_ROWS = [];
+      let ACTIVE_ROW = null;
+      let META = { bookingStatuses: [], activityStatuses: [] };
+
+      // สองชุดนี้เป็นอิสระต่อกัน เลือกพร้อมกันได้ (กรองแบบ AND) เช่น "อนุมัติ" + "เสร็จสิ้น" พร้อมกัน
+      const STATUS_FILTERS = [
+        { key: "all", label: "ทั้งหมด" },
+        { key: "รอดำเนินการ", label: "รอดำเนินการ" },
+        { key: "อนุมัติ", label: "อนุมัติ" },
+        { key: "ไม่อนุมัติ", label: "ไม่อนุมัติ" },
+      ];
+
+      const ACTIVITY_FILTERS = [
+        { key: "all", label: "ทั้งหมด" },
+        { key: "รอประชุม", label: "รอประชุม" },
+        { key: "ประชุมเสร็จสิ้น", label: "เสร็จสิ้น" },
+        { key: "ยกเลิก", label: "ยกเลิก" },
+      ];
+
+      function badgeClass(status) {
+        if (status === "อนุมัติ") return "approved";
+        if (status === "ไม่อนุมัติ") return "rejected";
+        return "pending";
+      }
+
+      function escapeHtml(str) {
+        return String(str || "").replace(
+          /[&<>"']/g,
+          (c) =>
+            ({
+              "&": "&amp;",
+              "<": "&lt;",
+              ">": "&gt;",
+              '"': "&quot;",
+              "'": "&#39;",
+            })[c],
+        );
+      }
+
+      function renderPillGroup(containerId, filters, currentKey, onSelect) {
+        const el = document.getElementById(containerId);
+        el.innerHTML = filters
+          .map(
+            (f) => `
+        <button type="button" class="pill ${currentKey === f.key ? "active" : ""}" data-key="${f.key}">${f.label}</button>
+      `,
+          )
+          .join("");
+        el.querySelectorAll(".pill").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            onSelect(btn.dataset.key);
+            applyFilters(); // กรองจากข้อมูลที่โหลดไว้แล้วในเครื่อง ไม่ต้องรอเรียกเซิร์ฟเวอร์ใหม่ทุกครั้ง
+          });
+        });
+      }
+
+      function renderStatusPills() {
+        renderPillGroup(
+          "statusPills",
+          STATUS_FILTERS,
+          CURRENT_FILTER.status,
+          (key) => {
+            CURRENT_FILTER.status = key;
+          },
+        );
+      }
+
+      function renderActivityPills() {
+        renderPillGroup(
+          "activityPills",
+          ACTIVITY_FILTERS,
+          CURRENT_FILTER.activityStatus,
+          (key) => {
+            CURRENT_FILTER.activityStatus = key;
+          },
+        );
+      }
+
+      // กรอง + ค้นหาจาก ALL_ROWS ที่ cache ไว้ในเบราว์เซอร์แล้ว ทำให้สลับเมนู/พิมพ์ค้นหาตอบสนองทันที
+      // ตัวกรอง "สถานะการจอง" และ "สถานะกิจกรรม" เป็นอิสระต่อกัน เลือกพร้อมกันได้ (แบบ AND)
+      function applyFilters() {
+        renderStatusPills();
+        renderActivityPills();
+
+        let rows = ALL_ROWS;
+        if (CURRENT_FILTER.status !== "all") {
+          rows = rows.filter((r) => r.bookingStatus === CURRENT_FILTER.status);
+        }
+        if (CURRENT_FILTER.activityStatus !== "all") {
+          rows = rows.filter(
+            (r) => r.activityStatus === CURRENT_FILTER.activityStatus,
+          );
+        }
+        if (CURRENT_FILTER.search) {
+          const q = CURRENT_FILTER.search.toLowerCase();
+          rows = rows.filter(
+            (r) =>
+              (r.requester + " " + r.title + " " + r.group)
+                .toLowerCase()
+                .indexOf(q) !== -1,
+          );
+        }
+        CURRENT_ROWS = rows;
+        renderList(rows);
+      }
+
+      function renderList(rows) {
+        const list = document.getElementById("requestList");
+        const emptyState = document.getElementById("emptyState");
+        if (rows.length === 0) {
+          list.innerHTML = "";
+          emptyState.classList.remove("hidden");
+          return;
+        }
+        emptyState.classList.add("hidden");
+
+        list.innerHTML = rows
+          .map(
+            (r, i) => `
+        <div class="request-card">
+          <div class="request-card-header">
+            <div>
+              <div class="request-card-title">${escapeHtml(r.title)}</div>
+              <div class="request-card-sub">${escapeHtml(r.requester)}${r.nickname ? " (" + escapeHtml(r.nickname) + ")" : ""} • ${escapeHtml(r.group)}</div>
+            </div>
+            <div class="request-card-actions">
+              <span class="badge ${badgeClass(r.bookingStatus)}">${escapeHtml(r.bookingStatus)}</span>
+              <span class="badge ${badgeClass(r.activityStatus === "ประชุมเสร็จสิ้น" ? "อนุมัติ" : r.activityStatus === "ยกเลิก" ? "ไม่อนุมัติ" : "")}">${escapeHtml(r.activityStatus)}</span>
+              <span class="badge ${r.emailSent ? "approved" : "pending"}">${r.emailSent ? "📧 ส่งอีเมลแล้ว" : "📧 ยังไม่ส่งอีเมล"}</span>
+              <button class="btn-secondary" data-idx="${i}">จัดการ</button>
+            </div>
+          </div>
+          <div class="request-grid">
+            <div class="kv"><span class="k">วันที่ส่งคำขอ</span><span class="v">${escapeHtml(r.timestampDisplay)}</span></div>
+            <div class="kv"><span class="k">วันที่ประชุม</span><span class="v">${escapeHtml(r.meetingDate)} - ${escapeHtml(r.endDate)}</span></div>
+            <div class="kv"><span class="k">เวลา</span><span class="v">${escapeHtml(r.meetingTime)}</span></div>
+            <div class="kv"><span class="k">ห้องประชุม</span><span class="v">${escapeHtml(r.room)}</span></div>
+            <div class="kv"><span class="k">อีเมล</span><span class="v">${escapeHtml(r.email) || "-"}</span></div>
+            <div class="kv"><span class="k">สถานะอีเมล</span><span class="v">${r.emailSent ? "✅ ส่งแล้วเมื่อ " + escapeHtml(r.emailSentAt) : "ยังไม่ส่ง"}</span></div>
+            <div class="kv"><span class="k">Meeting Room</span><span class="v">${escapeHtml(r.meetingRoom) || "-"}</span></div>
+            <div class="kv"><span class="k">HOST ID</span><span class="v">${escapeHtml(r.hostId) || "-"}</span></div>
+            <div class="kv"><span class="k">Password</span><span class="v">${escapeHtml(r.password) || "-"}</span></div>
+            <div class="kv wide"><span class="k">WebEx / Zoom Link</span><span class="v">${escapeHtml(r.webexLink) || "-"}</span></div>
+            <div class="kv wide"><span class="k">หมายเหตุ</span><span class="v">${escapeHtml(r.note) || "-"}</span></div>
+          </div>
+        </div>
+      `,
+          )
+          .join("");
+
+        list.querySelectorAll("button[data-idx]").forEach((btn) => {
+          btn.addEventListener("click", () =>
+            openModal(rows[Number(btn.dataset.idx)]),
+          );
+        });
+      }
+
+      let ALL_ROWS = [];
+
+      // ดึงข้อมูล "ทั้งหมด" จากเซิร์ฟเวอร์ครั้งเดียว แล้ว cache ไว้ที่ ALL_ROWS
+      // เรียกใหม่เฉพาะตอนโหลดหน้าครั้งแรก และหลังบันทึกข้อมูลสำเร็จ
+      function loadRequests() {
+        google.script.run
+          .withSuccessHandler(function (res) {
+            if (!res.success) {
+              showLogin(
+                res.expired
+                  ? "เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่"
+                  : res.message,
+              );
+              return;
+            }
+            ALL_ROWS = res.rows;
+            applyFilters();
+            initDashFilters();
+            if (
+              !document.getElementById("dashPane").classList.contains("hidden")
+            )
+              renderDashboard();
+          })
+          .withFailureHandler(function (err) {
+            showToast("โหลดข้อมูลไม่สำเร็จ: " + err.message, "error");
+          })
+          .getRequests(TOKEN, { status: "all", search: "" });
+      }
+
+      function fillSelect(selectEl, options, current) {
+        selectEl.innerHTML = options
+          .map(
+            (o) =>
+              `<option value="${o}" ${o === current ? "selected" : ""}>${o}</option>`,
+          )
+          .join("");
+      }
+
+      function openModal(row) {
+        ACTIVE_ROW = row;
+        document.getElementById("modalTitle").textContent = row.title;
+        document.getElementById("modalMeta").textContent =
+          `${row.requester} • ${row.group} • ${row.meetingDate} ${row.meetingTime}`;
+        document.getElementById("fEmailDisplay").value =
+          row.email || "ไม่มีอีเมลในคำขอนี้";
+        document.getElementById("fMeetingRoom").value = row.meetingRoom || "";
+        document.getElementById("fHostId").value = row.hostId || "";
+        document.getElementById("fPassword").value = row.password || "";
+        document.getElementById("fWebexLink").value = row.webexLink || "";
+        document.getElementById("fNote").value = row.note || "";
+        fillSelect(
+          document.getElementById("fBookingStatus"),
+          META.bookingStatuses,
+          row.bookingStatus,
+        );
+        fillSelect(
+          document.getElementById("fActivityStatus"),
+          META.activityStatuses,
+          row.activityStatus,
+        );
+
+        const sendEmailCheckbox = document.getElementById("fSendEmail");
+        sendEmailCheckbox.checked = !!row.email && !row.emailSent; // ครั้งแรกติ๊กให้อัตโนมัติ ถ้าเคยส่งแล้วปล่อยว่างไว้กันส่งซ้ำโดยไม่ตั้งใจ
+        sendEmailCheckbox.disabled = !row.email;
+        document.getElementById("sendEmailRow").style.opacity = row.email
+          ? "1"
+          : "0.5";
+
+        const hint = document.getElementById("emailSentHint");
+        hint.textContent = row.emailSent
+          ? `เคยส่งอีเมลแจ้งผลคำขอนี้ไปแล้วเมื่อ ${row.emailSentAt} (ถ้าติ๊กแล้วบันทึกอีก จะส่งซ้ำและอัปเดตเวลาล่าสุด)`
+          : "ยังไม่เคยส่งอีเมลแจ้งผลสำหรับคำขอนี้";
+
+        document.getElementById("modalOverlay").classList.remove("hidden");
+      }
+
+      function closeModal() {
+        document.getElementById("modalOverlay").classList.add("hidden");
+        ACTIVE_ROW = null;
+      }
+
+      document
+        .getElementById("modalClose")
+        .addEventListener("click", closeModal);
+      document
+        .getElementById("modalCancel")
+        .addEventListener("click", closeModal);
+
+      document
+        .getElementById("modalSave")
+        .addEventListener("click", function () {
+          if (!ACTIVE_ROW) return;
+          const btn = this;
+          btn.disabled = true;
+          btn.innerHTML = '<span class="spinner"></span>กำลังบันทึก...';
+
+          const fields = {
+            meetingRoom: document.getElementById("fMeetingRoom").value.trim(),
+            hostId: document.getElementById("fHostId").value.trim(),
+            password: document.getElementById("fPassword").value.trim(),
+            webexLink: document.getElementById("fWebexLink").value.trim(),
+            bookingStatus: document.getElementById("fBookingStatus").value,
+            activityStatus: document.getElementById("fActivityStatus").value,
+            note: document.getElementById("fNote").value.trim(),
+            sendEmail: document.getElementById("fSendEmail").checked,
+          };
+
+          google.script.run
+            .withSuccessHandler(function (res) {
+              btn.disabled = false;
+              btn.textContent = "บันทึกข้อมูล";
+              if (res.expired) {
+                closeModal();
+                showLogin(res.message);
+                return;
+              }
+              if (res.success) {
+                showToast(res.message, "success");
+                closeModal();
+                loadRequests();
+              } else {
+                showToast(res.message, "error");
+              }
+            })
+            .withFailureHandler(function (err) {
+              btn.disabled = false;
+              btn.textContent = "บันทึกข้อมูล";
+              showToast("เกิดข้อผิดพลาด: " + err.message, "error");
+            })
+            .saveBookingInfo(
+              TOKEN,
+              ACTIVE_ROW.rowNumber,
+              ACTIVE_ROW.timestamp,
+              fields,
+            );
+        });
+
+      document
+        .getElementById("searchBox")
+        .addEventListener("input", function () {
+          CURRENT_FILTER.search = this.value;
+          applyFilters(); // ค้นหาจากข้อมูลในเครื่อง ไม่หน่วงเวลารอเซิร์ฟเวอร์
+        });
+
+      function showToast(message, type) {
+        const toast = document.getElementById("toast");
+        toast.textContent = message;
+        toast.className = "toast show " + (type || "");
+        setTimeout(() => {
+          toast.className = "toast " + (type || "");
+        }, 3500);
+      }
+
+      /* ===== Dashboard ผู้บริหาร (คำนวณจาก ALL_ROWS ที่โหลดหลังล็อกอิน) ===== */
+      const MONTHS_TH = [
+        "ม.ค.",
+        "ก.พ.",
+        "มี.ค.",
+        "เม.ย.",
+        "พ.ค.",
+        "มิ.ย.",
+        "ก.ค.",
+        "ส.ค.",
+        "ก.ย.",
+        "ต.ค.",
+        "พ.ย.",
+        "ธ.ค.",
+      ];
+      const PALETTE = [
+        "#0b5d52",
+        "#e2992e",
+        "#5b8def",
+        "#c0433a",
+        "#9b59b6",
+        "#17a2b8",
+        "#2f7d5a",
+        "#d46a9b",
+        "#8c6d1f",
+        "#7f8c8d",
+      ];
+      const STATUS_COLORS = {
+        อนุมัติ: "#2f7d5a",
+        รอดำเนินการ: "#e2992e",
+        ไม่อนุมัติ: "#c0433a",
+      };
+      const FISCAL_MONTHS = [10, 11, 12, 1, 2, 3, 4, 5, 6, 7, 8, 9]; // เรียงตามปีงบประมาณ ต.ค. -> ก.ย.
+      const FY_BASE = [2570, 2571, 2572]; // ปีงบประมาณที่ให้เลือกเสมอ
+      // ปีงบประมาณ (พ.ศ.) ของวันที่ p: ต.ค.-ธ.ค. นับเป็นปีงบถัดไป เช่น 1 ต.ค. 2569 = ปีงบ 2570
+      const fiscalYear = (p) => (p.m >= 10 ? p.y + 544 : p.y + 543);
+      function currentFiscalYear() {
+        const n = new Date();
+        return n.getMonth() + 1 >= 10
+          ? n.getFullYear() + 544
+          : n.getFullYear() + 543;
+      }
+      function periodText() {
+        const y = byId("dYear").value,
+          m = byId("dMonth").value,
+          g = byId("dGroup").value;
+        let t =
+          y === "all"
+            ? "ทุกปีงบประมาณ"
+            : "ปีงบประมาณ " +
+              y +
+              " (1 ตุลาคม " +
+              (y - 1) +
+              " - 30 กันยายน " +
+              y +
+              ")";
+        if (m !== "all")
+          t +=
+            " • เดือน " +
+            MONTHS_TH[m - 1] +
+            (y !== "all" ? " " + (Number(m) >= 10 ? y - 1 : y) : "");
+        if (g !== "all") t += " • " + g;
+        return t;
+      }
+      const CHARTS = {};
+      let DASH_INIT = false;
+      if (typeof Chart !== "undefined")
+        Chart.defaults.font.family = "Sarabun, sans-serif";
+
+      const valueLabels = {
+        id: "valueLabels",
+        afterDatasetsDraw(chart) {
+          const ctx = chart.ctx;
+          ctx.save();
+          ctx.font = "11px Sarabun, sans-serif";
+          ctx.fillStyle = "#1e2a28";
+          ctx.textAlign = "center";
+          chart.data.datasets.forEach((ds, di) => {
+            chart.getDatasetMeta(di).data.forEach((bar, i) => {
+              if (ds.data[i]) ctx.fillText(ds.data[i], bar.x, bar.y - 4);
+            });
+          });
+          ctx.restore();
+        },
+      };
+
+      const byId = (id) => document.getElementById(id);
+      const trunc = (s, n) => {
+        s = String(s);
+        return s.length > n ? s.slice(0, n - 1) + "…" : s;
+      };
+      const grp = (r) => r.group || "ไม่ระบุ";
+      const shortGroup = (g) => String(g).replace(/^กลุ่ม/, "");
+      const shortRoom = (r) =>
+        String(r || "ไม่ระบุ")
+          .split(/\s+ชั้น/)[0]
+          .trim();
+      function shortFormat(f) {
+        f = String(f || "ไม่ระบุ");
+        if (/Join Host/i.test(f)) return "Join Host Meeting";
+        if (/Offline/i.test(f)) return "IT Support (Offline)";
+        if (/ID Zoom/i.test(f)) return "ID & IT Support";
+        return f;
+      }
+      function parseDmy(s) {
+        const m = String(s || "").match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+        return m ? { d: +m[1], m: +m[2], y: +m[3] } : null;
+      }
+      function countBy(rows, fn) {
+        const o = {};
+        rows.forEach((r) => {
+          const k = fn(r);
+          o[k] = (o[k] || 0) + 1;
+        });
+        return Object.entries(o).sort((a, b) => b[1] - a[1]);
+      }
+      function topN(entries, n) {
+        const head = entries.slice(0, n);
+        const rest = entries.slice(n).reduce((s, e) => s + e[1], 0);
+        if (rest) head.push(["อื่นๆ", rest]);
+        return head;
+      }
+      function drawChart(id, cfg) {
+        if (CHARTS[id]) CHARTS[id].destroy();
+        CHARTS[id] = new Chart(byId(id), cfg);
+      }
+      function pieChart(id, entries, type) {
+        const total = entries.reduce((s, e) => s + e[1], 0) || 1;
+        drawChart(id, {
+          type: type,
+          data: {
+            labels: entries.map(
+              (e) =>
+                trunc(e[0], 30) +
+                " — " +
+                e[1] +
+                " (" +
+                Math.round((e[1] * 100) / total) +
+                "%)",
+            ),
+            datasets: [
+              {
+                data: entries.map((e) => e[1]),
+                backgroundColor: entries.map(
+                  (_, i) => PALETTE[i % PALETTE.length],
+                ),
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: "right",
+                labels: { boxWidth: 12, font: { size: 11 } },
+              },
+            },
+          },
+        });
+      }
+      function barChart(id, labels, datasets, legend) {
+        drawChart(id, {
+          type: "bar",
+          data: { labels: labels, datasets: datasets },
+          plugins: [valueLabels],
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: !!legend, position: "bottom" } },
+            scales: {
+              y: { beginAtZero: true, grace: "10%", ticks: { precision: 0 } },
+              x: {
+                ticks: { autoSkip: false, maxRotation: 50, font: { size: 10 } },
+              },
+            },
+          },
+        });
+      }
+
+      function initDashFilters() {
+        const years = [
+          ...new Set(
+            FY_BASE.concat(
+              ALL_ROWS.map((r) => parseDmy(r.meetingDate))
+                .filter(Boolean)
+                .map(fiscalYear)
+                .filter((y) => y >= FY_BASE[0]),
+            ),
+          ),
+        ].sort((a, b) => a - b);
+        const groups = [...new Set(ALL_ROWS.map(grp))].sort();
+        const yEl = byId("dYear"),
+          mEl = byId("dMonth"),
+          gEl = byId("dGroup");
+        const prevY = yEl.value,
+          prevG = gEl.value,
+          prevM = mEl.value;
+        yEl.innerHTML =
+          '<option value="all">ทุกปีงบประมาณ</option>' +
+          years
+            .map((y) => `<option value="${y}">ปีงบประมาณ ${y}</option>`)
+            .join("");
+        mEl.innerHTML =
+          '<option value="all">ทุกเดือน</option>' +
+          FISCAL_MONTHS.map(
+            (n) => `<option value="${n}">${MONTHS_TH[n - 1]}</option>`,
+          ).join("");
+        gEl.innerHTML =
+          '<option value="all">ทุกกลุ่มงาน</option>' +
+          groups
+            .map(
+              (g) =>
+                `<option value="${escapeHtml(g)}">${escapeHtml(trunc(shortGroup(g), 40))}</option>`,
+            )
+            .join("");
+        yEl.value = DASH_INIT
+          ? prevY
+          : String(
+              years.indexOf(currentFiscalYear()) >= 0
+                ? currentFiscalYear()
+                : years[0],
+            );
+        if (!yEl.value) yEl.value = "all";
+        mEl.value = DASH_INIT ? prevM : "all";
+        gEl.value = DASH_INIT ? prevG : "all";
+        if (!gEl.value) gEl.value = "all";
+        DASH_INIT = true;
+      }
+
+      function dashRows() {
+        const y = byId("dYear").value,
+          m = byId("dMonth").value,
+          g = byId("dGroup").value;
+        return ALL_ROWS.filter((r) => {
+          const p = parseDmy(r.meetingDate);
+          if (y !== "all" && (!p || String(fiscalYear(p)) !== y)) return false;
+          if (m !== "all" && (!p || String(p.m) !== m)) return false;
+          if (g !== "all" && grp(r) !== g) return false;
+          return true;
+        });
+      }
+
+      function renderDashboard() {
+        if (typeof Chart === "undefined") {
+          showToast(
+            "โหลดไลบรารีกราฟไม่สำเร็จ กรุณาตรวจสอบอินเทอร์เน็ตแล้วรีเฟรช",
+            "error",
+          );
+          return;
+        }
+        const rows = dashRows();
+        const y = byId("dYear").value;
+        byId("dashTitle").textContent =
+          "รายงานการใช้งานระบบ Video Conference สคร.8 อุดรธานี";
+        byId("dashPeriod").textContent = periodText();
+        byId("dashAsOf").textContent =
+          "ข้อมูล ณ วันที่ " +
+          new Date().toLocaleDateString("th-TH", {
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+          });
+
+        const cnt = (s) => rows.filter((r) => r.bookingStatus === s).length;
+        byId("kpiRow").innerHTML = [
+          ["main", "การประชุมทั้งหมด", rows.length],
+          ["ok", "อนุมัติ", cnt("อนุมัติ")],
+          ["wait", "รอดำเนินการ", cnt("รอดำเนินการ")],
+          ["bad", "ไม่อนุมัติ", cnt("ไม่อนุมัติ")],
+        ]
+          .map(
+            (k) =>
+              `<div class="kpi ${k[0]}"><div class="l">${k[1]}</div><div class="n">${k[2]}</div></div>`,
+          )
+          .join("");
+
+        pieChart(
+          "chGroup",
+          topN(
+            countBy(rows, (r) => shortGroup(grp(r))),
+            10,
+          ),
+          "doughnut",
+        );
+        pieChart(
+          "chRoom",
+          topN(
+            countBy(rows, (r) => shortRoom(r.room)),
+            8,
+          ),
+          "pie",
+        );
+        pieChart(
+          "chHost",
+          topN(
+            countBy(rows, (r) => r.meetingRoom || "ยังไม่ระบุ"),
+            8,
+          ),
+          "pie",
+        );
+
+        const fmt = countBy(rows, (r) => shortFormat(r.itSupport));
+        barChart(
+          "chFormat",
+          fmt.map((e) => e[0]),
+          [{ data: fmt.map((e) => e[1]), backgroundColor: PALETTE[0] }],
+        );
+
+        const st = countBy(rows, (r) => r.bookingStatus);
+        barChart(
+          "chStatus",
+          st.map((e) => e[0]),
+          [
+            {
+              data: st.map((e) => e[1]),
+              backgroundColor: st.map((e) => STATUS_COLORS[e[0]] || "#7f8c8d"),
+            },
+          ],
+        );
+
+        const monthCounts = new Array(12).fill(0);
+        rows.forEach((r) => {
+          const p = parseDmy(r.meetingDate);
+          if (p) monthCounts[FISCAL_MONTHS.indexOf(p.m)]++;
+        });
+        barChart(
+          "chMonth",
+          FISCAL_MONTHS.map((n) => MONTHS_TH[n - 1]),
+          [{ data: monthCounts, backgroundColor: PALETTE[2] }],
+        );
+
+        const topRooms = countBy(rows, (r) => shortRoom(r.room))
+          .slice(0, 6)
+          .map((e) => e[0]);
+        const rk = (r) =>
+          topRooms.indexOf(shortRoom(r.room)) >= 0
+            ? shortRoom(r.room)
+            : "อื่นๆ";
+        const roomNames = topRooms.slice();
+        if (
+          rows.some((r) => rk(r) === "อื่นๆ") &&
+          roomNames.indexOf("อื่นๆ") < 0
+        )
+          roomNames.push("อื่นๆ");
+        const gOrder = countBy(rows, grp).map((e) => e[0]);
+        barChart(
+          "chGroupRoom",
+          gOrder.map((g) => trunc(shortGroup(g), 16)),
+          roomNames.map((rm, i) => ({
+            label: trunc(rm, 28),
+            backgroundColor: PALETTE[i % PALETTE.length],
+            data: gOrder.map(
+              (g) => rows.filter((r) => grp(r) === g && rk(r) === rm).length,
+            ),
+          })),
+          true,
+        );
+      }
+
+      function setTab(t) {
+        const dash = t === "dash";
+        byId("listPane").classList.toggle("hidden", dash);
+        byId("dashPane").classList.toggle("hidden", !dash);
+        byId("tabList").classList.toggle("active", !dash);
+        byId("tabDash").classList.toggle("active", dash);
+        if (dash) renderDashboard();
+      }
+      byId("tabList").addEventListener("click", () => setTab("list"));
+      byId("tabDash").addEventListener("click", () => setTab("dash"));
+      ["dYear", "dMonth", "dGroup"].forEach((id) =>
+        byId(id).addEventListener("change", renderDashboard),
+      );
+      byId("dashPrint").addEventListener("click", () => window.print());
+
+      let TOKEN = "";
+      function storeToken(t) {
+        try {
+          t
+            ? sessionStorage.setItem("odpc8_tk", t)
+            : sessionStorage.removeItem("odpc8_tk");
+        } catch (e) {}
+      }
+      function showLogin(msg) {
+        TOKEN = "";
+        storeToken("");
+        ALL_ROWS = [];
+        document.getElementById("adminView").classList.add("hidden");
+        document.getElementById("logoutBtn").classList.add("hidden");
+        document.getElementById("loginView").classList.remove("hidden");
+        if (msg) showToast(msg, "error");
+      }
+      function showAdmin() {
+        document.getElementById("loginView").classList.add("hidden");
+        document.getElementById("adminView").classList.remove("hidden");
+        document.getElementById("logoutBtn").classList.remove("hidden");
+        loadRequests();
+      }
+      function doLogin() {
+        const btn = document.getElementById("loginBtn");
+        const u = document.getElementById("loginUser").value.trim();
+        const p = document.getElementById("loginPass").value;
+        if (!u || !p) {
+          showToast("กรุณากรอกชื่อผู้ใช้และรหัสผ่าน", "error");
+          return;
+        }
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span>กำลังตรวจสอบ...';
+        google.script.run
+          .withSuccessHandler(function (res) {
+            btn.disabled = false;
+            btn.textContent = "เข้าสู่ระบบ";
+            if (res.success) {
+              TOKEN = res.token;
+              storeToken(TOKEN);
+              document.getElementById("loginPass").value = "";
+              showAdmin();
+            } else {
+              showToast(res.message, "error");
+            }
+          })
+          .withFailureHandler(function (err) {
+            btn.disabled = false;
+            btn.textContent = "เข้าสู่ระบบ";
+            showToast("เกิดข้อผิดพลาด: " + err.message, "error");
+          })
+          .adminLogin(u, p);
+      }
+
+      document.getElementById("loginBtn").addEventListener("click", doLogin);
+      document
+        .getElementById("loginPass")
+        .addEventListener("keydown", function (e) {
+          if (e.key === "Enter") doLogin();
+        });
+      document
+        .getElementById("logoutBtn")
+        .addEventListener("click", function () {
+          google.script.run.adminLogout(TOKEN);
+          showLogin();
+        });
+
+      google.script.run
+        .withSuccessHandler(function (meta) {
+          META = meta;
+          document.getElementById("meetingRoomSuggestions").innerHTML = (
+            meta.meetingRoomSuggestions || []
+          )
+            .map((r) => `<option value="${r}"></option>`)
+            .join("");
+        })
+        .getAdminMeta();
+
+      try {
+        TOKEN = sessionStorage.getItem("odpc8_tk") || "";
+      } catch (e) {}
+      if (TOKEN) showAdmin();
+    </script>
+  </body>
+</html>
