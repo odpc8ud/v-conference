@@ -527,7 +527,7 @@ function getRequests(token, filter) {
       attendees: get("จำนวนผู้เข้าร่วมประชุม"),
       hostId: get("HOST ID"),
       password: get("Password HOST ID"),
-      webLink: get("Web Link"),
+      webLink: get("WebLink"),
       meetingRoom: get(MEETING_ROOM_HEADER),
       bookingStatus: bookingStatus,
       activityStatus: get("สถานะกิจกรรม") || "รอประชุม",
@@ -559,7 +559,7 @@ function saveBookingInfo(token, rowNumber, timestampIso, fields) {
     const updates = {
       "HOST ID": fields.hostId || "",
       "Password HOST ID": fields.password || "",
-      "Web Link": fields.webLink || "",
+      "WebLink": fields.webLink || "",
       [MEETING_ROOM_HEADER]: fields.meetingRoom || "",
       "สถานะการจอง": fields.bookingStatus || "รอดำเนินการ",
       "สถานะกิจกรรม": fields.activityStatus || "รอประชุม",
@@ -593,7 +593,7 @@ function saveBookingInfo(token, rowNumber, timestampIso, fields) {
             room: get("สถานที่จัดประชุม"),
             hostId: updates["HOST ID"],
             password: updates["Password HOST ID"],
-            webLink: updates["Web Link"],
+            webLink: updates["WebLink"],
             meetingRoom: updates[MEETING_ROOM_HEADER],
             bookingStatus: updates["สถานะการจอง"],
             activityStatus: updates["สถานะกิจกรรม"],
@@ -806,7 +806,7 @@ function formatCombinedMessage_(meetings, reminderMode) {
       `🏷️ Meeting Room: ${row[MEETING_ROOM_HEADER] || "-"}\n` +
       `🆔 HOST ID: ${row["HOST ID"] || "-"}\n` +
       `🔑 Password: ${row["Password HOST ID"] || "-"}\n` +
-      `🔗 Web Link: ${row["Web Link"] || "-"}\n\n`;
+      `🔗 WebLink: ${row["WebLink"] || "-"}\n\n`;
   });
 
   return message.trim();
