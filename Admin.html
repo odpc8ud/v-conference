@@ -137,6 +137,41 @@
       .btn-copy:hover { background: var(--color-primary); border-color: var(--color-primary); color: #fff; }
       #lineText { min-height: 300px; font-size: 13.5px; line-height: 1.65; }
       @media print { .btn-copy { display: none !important; } }
+      /* ===== แท็บ ตรวจสอบห้องออนไลน์ว่าง ===== */
+      .free-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+      .free-head h2 { font-size: 21px; }
+      .free-controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+      .free-controls input { width: auto; }
+      .free-sum { padding: 16px 20px; margin-bottom: 16px; }
+      .free-sum .fs-title { font-weight: 600; font-size: 16px; color: var(--color-primary-dark); }
+      .free-sum .fs-verdict { margin: 4px 0 12px; font-size: 14.5px; }
+      .free-sum .fs-verdict.ok { color: var(--color-success); }
+      .free-sum .fs-verdict.bad { color: var(--color-danger); }
+      .fs-rooms { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+      .fs-room { border-radius: var(--radius-sm); padding: 10px 14px; border: 1px solid var(--color-border); display: flex; flex-direction: column; gap: 2px; }
+      .fs-room b { font-size: 14.5px; }
+      .fs-room span { font-size: 13px; font-weight: 600; }
+      .fs-room small { font-size: 12px; line-height: 1.4; }
+      .fs-room.free { background: var(--color-success-bg); border-color: #bfe0cd; color: var(--color-success); }
+      .fs-room.busy { background: var(--color-danger-bg); border-color: #efc4c0; color: var(--color-danger); }
+      .fs-note { margin-top: 12px; font-size: 13px; color: var(--color-pending); background: var(--color-pending-bg); border-radius: var(--radius-sm); padding: 8px 12px; }
+      .free-month-nav { display: flex; align-items: center; justify-content: center; gap: 14px; margin-bottom: 10px; }
+      .free-month-nav strong { min-width: 150px; text-align: center; font-size: 16px; }
+      #freeTable { min-width: 680px; }
+      #freeTable tbody tr { cursor: pointer; }
+      #freeTable td.free { background: var(--color-success-bg); color: var(--color-success); font-weight: 500; }
+      #freeTable td.busy { background: var(--color-danger-bg); color: var(--color-danger); }
+      #freeTable .fb-title { font-size: 12.5px; font-weight: 500; }
+      #freeTable .fb-time { font-size: 11.5px; opacity: 0.85; }
+      #freeTable tr.wk td:first-child { color: var(--color-text-muted); }
+      #freeTable tr.past { opacity: 0.55; }
+      #freeTable tr.today td:first-child { background: var(--color-primary-soft); font-weight: 600; }
+      #freeTable tr.sel td:first-child { box-shadow: inset 4px 0 0 var(--color-primary); font-weight: 600; }
+      #freeTable td.cnt { white-space: nowrap; font-weight: 500; }
+      #freeTable td.cnt.zero { color: var(--color-danger); }
+      .field-hint.conflict { color: var(--color-danger); font-weight: 500; }
+      .field-hint.ok { color: var(--color-success); }
+      @media print { #freePane .free-controls, .free-month-nav { display: none !important; } }
     </style>
   </head>
   <body>
@@ -200,6 +235,9 @@
           <button type="button" class="pill" id="tabDash">
             แดชบอร์ดผู้บริหาร
           </button>
+          <button type="button" class="pill" id="tabFree">
+            ตรวจสอบห้องออนไลน์ว่าง
+          </button>
         </div>
         <div id="listPane">
           <div class="toolbar">
@@ -222,6 +260,46 @@
           <div class="request-list" id="requestList"></div>
           <div class="empty-state hidden panel" id="emptyState">
             ไม่พบรายการที่ตรงกับเงื่อนไข
+          </div>
+        </div>
+
+        <div id="freePane" class="hidden">
+          <div class="free-head">
+            <div>
+              <h2>ตรวจสอบห้องออนไลน์ว่าง</h2>
+              <div class="field-hint">
+                Zoom มี 3 ห้อง (Host ID คงที่) ใช้ซ้ำในวันเดียวกันไม่ได้ •
+                WebEx สร้างลิงก์ใหม่ทุกครั้ง จึงไม่จำกัดห้อง
+              </div>
+            </div>
+            <div class="free-controls">
+              <label class="field-label" for="freeDate" style="margin: 0">เลือกวันที่</label>
+              <input type="date" id="freeDate" />
+              <button type="button" class="btn-secondary" id="freeToday">วันนี้</button>
+            </div>
+          </div>
+          <div class="panel free-sum" id="freeSummary"></div>
+          <div class="free-month-nav">
+            <button type="button" class="btn-secondary" id="freePrev">‹ เดือนก่อน</button>
+            <strong id="freeMonthLabel"></strong>
+            <button type="button" class="btn-secondary" id="freeNext">เดือนถัดไป ›</button>
+          </div>
+          <div class="table-wrap">
+            <table id="freeTable">
+              <thead>
+                <tr>
+                  <th>วันที่</th>
+                  <th>Zoom V-Con 1</th>
+                  <th>Zoom V-Con 2</th>
+                  <th>Zoom V-Con 3</th>
+                  <th>ห้อง Zoom ว่าง</th>
+                </tr>
+              </thead>
+              <tbody id="freeRows"></tbody>
+            </table>
+          </div>
+          <div class="field-hint" style="margin-top: 8px">
+            นับเฉพาะรายการที่ระบุ Meeting Room แล้ว และไม่ใช่ "ไม่อนุมัติ"/"ยกเลิก" • คลิกแถวเพื่อดูรายละเอียดของวันนั้น
           </div>
         </div>
 
@@ -302,6 +380,7 @@
               list="meetingRoomSuggestions"
             />
             <datalist id="meetingRoomSuggestions"></datalist>
+            <div class="field-hint" id="roomConflictHint" style="margin-top: 6px"></div>
           </div>
           <div>
             <label class="field-label">HOST ID</label>
@@ -563,6 +642,10 @@
               !document.getElementById("dashPane").classList.contains("hidden")
             )
               renderDashboard();
+            if (
+              !document.getElementById("freePane").classList.contains("hidden")
+            )
+              renderFree();
           })
           .withFailureHandler(function (err) {
             showToast("โหลดข้อมูลไม่สำเร็จ: " + err.message, "error");
@@ -615,6 +698,7 @@
           : "ยังไม่เคยส่งอีเมลแจ้งผลสำหรับคำขอนี้";
 
         document.getElementById("modalOverlay").classList.remove("hidden");
+        updateRoomConflict();
       }
 
       function closeModal() {
@@ -696,6 +780,12 @@
         });
         input.addEventListener("blur", function () {
           if (!input.value.trim()) input.value = prev;
+          updateRoomConflict();
+        });
+        input.addEventListener("input", updateRoomConflict);
+        input.addEventListener("change", updateRoomConflict);
+        ["fBookingStatus", "fActivityStatus"].forEach(function (id) {
+          document.getElementById(id).addEventListener("change", updateRoomConflict);
         });
       })();
 
@@ -1126,16 +1216,196 @@
         );
       }
 
+      /* ===== ตรวจสอบห้องออนไลน์ว่าง: Zoom 3 ห้อง ใช้ Host ID ซ้ำในวันเดียวกันไม่ได้ ===== */
+      const ZOOM_ROOMS = ["Zoom V-Con 1", "Zoom V-Con 2", "Zoom V-Con 3"];
+      const MONTHS_FULL_TH = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+      const DOW_SHORT_TH = ["อา.", "จ.", "อ.", "พ.", "พฤ.", "ศ.", "ส."];
+      const DOW_FULL_TH = ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"];
+      const FREE = { y: 0, m: 0, sel: "" };
+
+      function pad2(n) { return (n < 10 ? "0" : "") + n; }
+      function isoOf(y, m, d) { return y + "-" + pad2(m) + "-" + pad2(d); }
+      function todayLocalIso() {
+        const d = new Date();
+        return isoOf(d.getFullYear(), d.getMonth() + 1, d.getDate());
+      }
+      // รองรับค่าเก่าในชีตที่ไม่มีคำว่า Zoom เช่น "V-Con 1"
+      function normZoomRoom(s) {
+        const m = String(s || "").match(/v-?\s*con\s*(\d)/i);
+        if (!m) return "";
+        const name = "Zoom V-Con " + m[1];
+        return ZOOM_ROOMS.indexOf(name) >= 0 ? name : "";
+      }
+      function isActiveBooking(r) {
+        return r.bookingStatus !== "ไม่อนุมัติ" && String(r.activityStatus).indexOf("ยกเลิก") === -1;
+      }
+      // รายการวัน (yyyy-mm-dd) ทั้งหมดที่ประชุมนี้ครอบคลุม ตั้งแต่วันที่ประชุมถึงวันสิ้นสุด
+      function rowDays(r) {
+        const s = parseDmy(r.meetingDate);
+        if (!s) return [];
+        const e = parseDmy(r.endDate) || s;
+        const out = [];
+        const cur = new Date(s.y, s.m - 1, s.d);
+        const end = new Date(e.y, e.m - 1, e.d);
+        for (let i = 0; i < 400 && cur <= end; i++) {
+          out.push(isoOf(cur.getFullYear(), cur.getMonth() + 1, cur.getDate()));
+          cur.setDate(cur.getDate() + 1);
+        }
+        return out;
+      }
+      // { "yyyy-mm-dd|Zoom V-Con 1": [แถวที่ใช้ห้องนี้ในวันนั้น] }
+      function buildZoomOccupancy() {
+        const occ = {};
+        ALL_ROWS.forEach((r) => {
+          if (!isActiveBooking(r)) return;
+          const room = normZoomRoom(r.meetingRoom);
+          if (!room) return;
+          rowDays(r).forEach((day) => {
+            const k = day + "|" + room;
+            (occ[k] = occ[k] || []).push(r);
+          });
+        });
+        return occ;
+      }
+      // คำขอ ID ที่ยังไม่ได้ระบุ Meeting Room (ยังไม่ได้จัดสรรห้อง) แยกตามวัน
+      function buildUnassigned() {
+        const un = {};
+        ALL_ROWS.forEach((r) => {
+          if (!isActiveBooking(r)) return;
+          if (!/ID Zoom/i.test(r.itSupport || "")) return;
+          if (String(r.meetingRoom || "").trim()) return;
+          rowDays(r).forEach((day) => {
+            (un[day] = un[day] || []).push(r);
+          });
+        });
+        return un;
+      }
+      function busyLabel(r) {
+        return escapeHtml(trunc(r.title, 60)) + (r.meetingTime ? " (" + escapeHtml(r.meetingTime) + ")" : "");
+      }
+
+      function renderFreeSummary(occ, un) {
+        const iso = FREE.sel;
+        const p = iso.split("-").map(Number);
+        const dow = new Date(p[0], p[1] - 1, p[2]).getDay();
+        const head = "วัน" + DOW_FULL_TH[dow] + "ที่ " + p[2] + " " + MONTHS_FULL_TH[p[1] - 1] + " " + (p[0] + 543);
+        const freeRooms = ZOOM_ROOMS.filter((r) => !(occ[iso + "|" + r] || []).length);
+        const verdict = freeRooms.length
+          ? `<div class="fs-verdict ok">ว่าง ${freeRooms.length} จาก 3 ห้อง: ${freeRooms.join(", ")}</div>`
+          : `<div class="fs-verdict bad">ไม่มีห้อง Zoom ว่างในวันนี้ — ใช้ WebEx แทนได้ (สร้างลิงก์ใหม่ทุกครั้ง)</div>`;
+        const cards = ZOOM_ROOMS.map((r) => {
+          const rows = occ[iso + "|" + r] || [];
+          return rows.length
+            ? `<div class="fs-room busy"><b>${r}</b><span>ไม่ว่าง</span><small>${rows.map(busyLabel).join("<br>")}</small></div>`
+            : `<div class="fs-room free"><b>${r}</b><span>ว่าง</span></div>`;
+        }).join("");
+        const pend = un[iso] || [];
+        const note = pend.length
+          ? `<div class="fs-note">มีคำขอ ID ที่ยังไม่ได้ระบุ Meeting Room ในวันนี้ ${pend.length} รายการ (ยังไม่นับเป็นห้องที่ถูกใช้): ${pend.map((r) => escapeHtml(trunc(r.title, 40))).join(" | ")}</div>`
+          : "";
+        byId("freeSummary").innerHTML = `<div class="fs-title">${head}</div>${verdict}<div class="fs-rooms">${cards}</div>${note}`;
+      }
+
+      function renderFree() {
+        const now = new Date();
+        if (!FREE.sel) FREE.sel = todayLocalIso();
+        if (!FREE.y) { FREE.y = now.getFullYear(); FREE.m = now.getMonth() + 1; }
+        byId("freeDate").value = FREE.sel;
+
+        const occ = buildZoomOccupancy();
+        const un = buildUnassigned();
+        renderFreeSummary(occ, un);
+
+        byId("freeMonthLabel").textContent = MONTHS_FULL_TH[FREE.m - 1] + " " + (FREE.y + 543);
+        const today = todayLocalIso();
+        const daysInMonth = new Date(FREE.y, FREE.m, 0).getDate();
+        let html = "";
+        for (let d = 1; d <= daysInMonth; d++) {
+          const iso = isoOf(FREE.y, FREE.m, d);
+          const dow = new Date(FREE.y, FREE.m - 1, d).getDay();
+          const cls = [];
+          if (dow === 0 || dow === 6) cls.push("wk");
+          if (iso < today) cls.push("past");
+          if (iso === today) cls.push("today");
+          if (iso === FREE.sel) cls.push("sel");
+          let freeCount = 0;
+          const cells = ZOOM_ROOMS.map((room) => {
+            const rows = occ[iso + "|" + room] || [];
+            if (!rows.length) { freeCount++; return '<td class="free">ว่าง</td>'; }
+            return '<td class="busy">' + rows.map((r) =>
+              `<div class="fb-title">${escapeHtml(trunc(r.title, 40))}</div><div class="fb-time">${escapeHtml(r.meetingTime || "")}</div>`
+            ).join("") + "</td>";
+          }).join("");
+          html += `<tr class="${cls.join(" ")}" data-iso="${iso}"><td>${d} ${MONTHS_TH[FREE.m - 1]} ${FREE.y + 543} (${DOW_SHORT_TH[dow]})</td>${cells}<td class="cnt ${freeCount === 0 ? "zero" : ""}">${freeCount}/3</td></tr>`;
+        }
+        byId("freeRows").innerHTML = html;
+        byId("freeRows").querySelectorAll("tr").forEach((tr) =>
+          tr.addEventListener("click", () => { FREE.sel = tr.dataset.iso; renderFree(); }));
+      }
+
+      function shiftFreeMonth(delta) {
+        const d = new Date(FREE.y, FREE.m - 1 + delta, 1);
+        FREE.y = d.getFullYear();
+        FREE.m = d.getMonth() + 1;
+        renderFree();
+      }
+      byId("freePrev").addEventListener("click", () => shiftFreeMonth(-1));
+      byId("freeNext").addEventListener("click", () => shiftFreeMonth(1));
+      byId("freeToday").addEventListener("click", () => { FREE.sel = ""; FREE.y = 0; renderFree(); });
+      byId("freeDate").addEventListener("change", function () {
+        if (!this.value) return;
+        FREE.sel = this.value;
+        const p = this.value.split("-").map(Number);
+        FREE.y = p[0];
+        FREE.m = p[1];
+        renderFree();
+      });
+
+      // เตือนในหน้าจัดการ: ถ้าเลือก Zoom ห้องที่ถูกใช้แล้วในวันเดียวกัน (เตือนเฉยๆ ไม่บล็อกการบันทึก)
+      function updateRoomConflict() {
+        const el = document.getElementById("roomConflictHint");
+        if (!el) return;
+        el.textContent = "";
+        el.className = "field-hint";
+        if (!ACTIVE_ROW) return;
+        const room = normZoomRoom(document.getElementById("fMeetingRoom").value);
+        if (!room) return;
+        const bs = document.getElementById("fBookingStatus").value;
+        const as = document.getElementById("fActivityStatus").value;
+        if (bs === "ไม่อนุมัติ" || String(as).indexOf("ยกเลิก") !== -1) return;
+        const myDays = rowDays(ACTIVE_ROW);
+        const clashes = ALL_ROWS.filter((r) =>
+          r.rowNumber !== ACTIVE_ROW.rowNumber &&
+          isActiveBooking(r) &&
+          normZoomRoom(r.meetingRoom) === room &&
+          rowDays(r).some((d) => myDays.indexOf(d) !== -1));
+        if (clashes.length) {
+          el.className = "field-hint conflict";
+          el.textContent = "⚠ " + room + " ถูกใช้แล้วในวันเดียวกัน: " + clashes.map((r) =>
+            r.title + " (" + r.meetingDate + (r.endDate && r.endDate !== r.meetingDate ? " - " + r.endDate : "") + (r.meetingTime ? " " + r.meetingTime : "") + ")"
+          ).join(" | ");
+        } else {
+          el.className = "field-hint ok";
+          el.textContent = "✓ " + room + " ว่างในวันที่ประชุมนี้";
+        }
+      }
+
       function setTab(t) {
-        const dash = t === "dash";
-        byId("listPane").classList.toggle("hidden", dash);
+        const dash = t === "dash",
+          free = t === "free",
+          list = t === "list";
+        byId("listPane").classList.toggle("hidden", !list);
         byId("dashPane").classList.toggle("hidden", !dash);
-        byId("tabList").classList.toggle("active", !dash);
+        byId("freePane").classList.toggle("hidden", !free);
+        byId("tabList").classList.toggle("active", list);
         byId("tabDash").classList.toggle("active", dash);
+        byId("tabFree").classList.toggle("active", free);
         if (dash) renderDashboard();
+        if (free) renderFree();
       }
       byId("tabList").addEventListener("click", () => setTab("list"));
       byId("tabDash").addEventListener("click", () => setTab("dash"));
+      byId("tabFree").addEventListener("click", () => setTab("free"));
       ["dYear", "dMonth", "dGroup"].forEach((id) =>
         byId(id).addEventListener("change", renderDashboard),
       );
