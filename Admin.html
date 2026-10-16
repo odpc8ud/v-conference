@@ -293,7 +293,7 @@
           <div>
             <label class="field-label">Meeting Room</label>
             <div class="field-hint">
-              ชื่อระบบ/ห้อง host เช่น V-Con 1, V-Con 2, Webex ODPC8 (พิมพ์เองได้
+              ชื่อระบบ/ห้อง host เช่น Zoom V-Con 1, Zoom V-Con 2, Webex ODPC8 (พิมพ์เองได้
               ไม่บังคับเลือกจากลิสต์)
             </div>
             <input
@@ -387,6 +387,13 @@
       function badgeClass(status) {
         if (status === "อนุมัติ") return "approved";
         if (status === "ไม่อนุมัติ") return "rejected";
+        return "pending";
+      }
+
+      // ป้ายสถานะกิจกรรม: เสร็จสิ้น = เขียว, ยกเลิก = แดง, อื่นๆ (รอประชุม) = ส้ม
+      function activityBadgeClass(s) {
+        if (s === "ประชุมเสร็จสิ้น") return "approved";
+        if (s === "ยกเลิก") return "rejected";
         return "pending";
       }
 
@@ -492,7 +499,7 @@
             </div>
             <div class="request-card-actions">
               <span class="badge ${badgeClass(r.bookingStatus)}">${escapeHtml(r.bookingStatus)}</span>
-              <span class="badge ${badgeClass(r.activityStatus === "ประชุมเสร็จสิ้น" ? "อนุมัติ" : r.activityStatus === "ยกเลิก" ? "ไม่อนุมัติ" : "")}">${escapeHtml(r.activityStatus)}</span>
+              <span class="badge ${activityBadgeClass(r.activityStatus)}">${escapeHtml(r.activityStatus)}</span>
               <span class="badge ${r.emailSent ? "approved" : "pending"}">${r.emailSent ? "📧 ส่งอีเมลแล้ว" : "📧 ยังไม่ส่งอีเมล"}</span>
               <button class="btn-secondary" data-idx="${i}">จัดการ</button>
             </div>
@@ -507,7 +514,7 @@
             <div class="kv"><span class="k">Meeting Room</span><span class="v">${escapeHtml(r.meetingRoom) || "-"}</span></div>
             <div class="kv"><span class="k">HOST ID</span><span class="v">${escapeHtml(r.hostId) || "-"}</span></div>
             <div class="kv"><span class="k">Password</span><span class="v">${escapeHtml(r.password) || "-"}</span></div>
-            <div class="kv wide"><span class="k">WebEx / Zoom Link</span><span class="v">${escapeHtml(r.webexLink) || "-"}</span></div>
+            <div class="kv wide"><span class="k">WebEx / Zoom Link</span><span class="v">${escapeHtml(r.webLink) || "-"}</span></div>
             <div class="kv wide"><span class="k">หมายเหตุ</span><span class="v">${escapeHtml(r.note) || "-"}</span></div>
             <div class="kv copy-cell"><button type="button" class="btn-copy" data-copy="${i}" title="ดูรายละเอียด / คัดลอกส่ง LINE" aria-label="ดูรายละเอียดการประชุมเพื่อคัดลอก"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="3" width="8" height="4" rx="1"/><path d="M16 5h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2"/><path d="M9 12h6M9 16h6"/></svg></button></div>
           </div>
@@ -544,7 +551,12 @@
               );
               return;
             }
-            ALL_ROWS = res.rows;
+            // ค่าเก่าในชีตบางแถวเป็น "ยกเลิกประชุม" → ปรับเป็น "ยกเลิก" ให้ตรงกับตัวเลือก/ตัวกรอง/สีป้าย
+            ALL_ROWS = res.rows.map((r) => {
+              if (String(r.activityStatus).indexOf("ยกเลิก") !== -1)
+                r.activityStatus = "ยกเลิก";
+              return r;
+            });
             applyFilters();
             initDashFilters();
             if (
@@ -577,7 +589,7 @@
         document.getElementById("fMeetingRoom").value = row.meetingRoom || "";
         document.getElementById("fHostId").value = row.hostId || "";
         document.getElementById("fPassword").value = row.password || "";
-        document.getElementById("fWebexLink").value = row.webexLink || "";
+        document.getElementById("fWebexLink").value = row.webLink || "";
         document.getElementById("fNote").value = row.note || "";
         fillSelect(
           document.getElementById("fBookingStatus"),
@@ -629,7 +641,7 @@
             meetingRoom: document.getElementById("fMeetingRoom").value.trim(),
             hostId: document.getElementById("fHostId").value.trim(),
             password: document.getElementById("fPassword").value.trim(),
-            webexLink: document.getElementById("fWebexLink").value.trim(),
+            webLink: document.getElementById("fWebexLink").value.trim(),
             bookingStatus: document.getElementById("fBookingStatus").value,
             activityStatus: document.getElementById("fActivityStatus").value,
             note: document.getElementById("fNote").value.trim(),
@@ -673,6 +685,20 @@
           applyFilters(); // ค้นหาจากข้อมูลในเครื่อง ไม่หน่วงเวลารอเซิร์ฟเวอร์
         });
 
+      // ช่อง Meeting Room: datalist ของเบราว์เซอร์กรองตัวเลือกตามข้อความในช่อง
+      // จึงล้างช่องตอนคลิกเพื่อให้เห็นตัวเลือกทั้งหมด แล้วคืนค่าเดิมถ้าไม่ได้เลือก/พิมพ์อะไร
+      (function () {
+        const input = document.getElementById("fMeetingRoom");
+        let prev = "";
+        input.addEventListener("focus", function () {
+          prev = input.value;
+          input.value = "";
+        });
+        input.addEventListener("blur", function () {
+          if (!input.value.trim()) input.value = prev;
+        });
+      })();
+
       /* ===== ข้อความรายละเอียดการประชุม (เหมือนอีเมลแจ้งผล) สำหรับคัดลอกส่ง LINE ===== */
       function buildMeetingMessage(r) {
         const v = (x) => (x === undefined || x === null || String(x).trim() === "" ? "-" : String(x).trim());
@@ -690,7 +716,7 @@
           ["Meeting Room", v(r.meetingRoom)],
           ["HOST ID", v(r.hostId)],
           ["Password", v(r.password)],
-          ["WebEx / Zoom Link", v(r.webexLink)],
+          ["WebEx / Zoom Link", v(r.webLink)],
           ["สถานะการจอง", v(r.bookingStatus)],
           ["สถานะกิจกรรม", v(r.activityStatus)],
           ["หมายเหตุ", v(r.note)],
