@@ -22,9 +22,9 @@ function getAdminUsers_() {
 }
 
 function setAdminUser() {
-  const USERNAME = "admin";
-  const PASSWORD = "ใส่รหัสผ่านที่นี่";
-  if (!USERNAME || PASSWORD === "ใส่รหัสผ่านที่นี่" || PASSWORD.length < 8) {
+  const USERNAME = "";
+  const PASSWORD = ""; //ใส่รหัสผ่านใหม่ของคุณที่นี่
+  if (!USERNAME || PASSWORD.length < 8) {
     throw new Error("กรุณาแก้ USERNAME และตั้ง PASSWORD (อย่างน้อย 8 ตัวอักษร) ก่อนรัน");
   }
   const users = getAdminUsers_();
@@ -85,7 +85,8 @@ function getPublicSchedule() {
     if (!startRaw) return;
     const bookingStatus = get("สถานะการจอง") || "รอดำเนินการ";
     const activityStatus = get("สถานะกิจกรรม") || "รอประชุม";
-    if (bookingStatus === "ไม่อนุมัติ" || activityStatus === "ยกเลิก") return;
+    // ใช้ indexOf เพราะในชีตมีทั้งค่า "ยกเลิก" และ "ยกเลิกประชุม"
+    if (bookingStatus === "ไม่อนุมัติ" || String(activityStatus).indexOf("ยกเลิก") !== -1) return;
 
     const start = new Date(startRaw);
     if (isNaN(start.getTime())) return;
