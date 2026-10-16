@@ -28,6 +28,8 @@
 const SHEET_NAME = "Host_Request_Conference";
 
 // การล็อกอินแอดมิน (User/Password) อยู่ในไฟล์ Auth.gs
+// ไอคอนแท็บของหน้า GAS (/exec) — ชี้ไปที่ไฟล์บน GitHub Pages (เปลี่ยน URL นี้ถ้าเปลี่ยนชื่อ repo)
+const FAVICON_URL = "https://odpc8ud.github.io/v-conference/favicon.png";
 const TITLES = {
   Admin: "ODPC8 - จัดการคำขอประชุม",
   Schedule: "ODPC8 - ตารางการประชุม",
@@ -109,7 +111,7 @@ function doGet(e) {
   return template.evaluate()
     .setTitle(TITLES[templateName])
     .addMetaTag("viewport", "width=device-width, initial-scale=1")
-    .setFaviconUrl("https://www.gstatic.com/images/branding/product/1x/sheets_48dp.png");
+    .setFaviconUrl(FAVICON_URL);
 }
 
 function include(filename) {

@@ -128,6 +128,15 @@
           break-inside: avoid;
         }
       }
+          .kv.copy-cell { grid-column: -2 / -1; align-self: end; justify-self: end; }
+      .btn-copy {
+        width: 40px; height: 40px; padding: 0; border-radius: 50%;
+        border: 1px solid var(--color-border); background: #fff; color: var(--color-primary);
+        display: inline-flex; align-items: center; justify-content: center;
+      }
+      .btn-copy:hover { background: var(--color-primary); border-color: var(--color-primary); color: #fff; }
+      #lineText { min-height: 300px; font-size: 13.5px; line-height: 1.65; }
+      @media print { .btn-copy { display: none !important; } }
     </style>
   </head>
   <body>
@@ -135,7 +144,7 @@
       <div class="brand">
         <div class="brand-mark">ODPC8</div>
         <div class="brand-text">
-          <div class="title">จัดการคำขอใช้ห้องประชุม V-Conference</div>
+          <div class="title">จัดการคำขอใช้ห้องประชุม</div>
           <div class="subtitle">สำหรับเจ้าหน้าที่ผู้ดูแลระบบ</div>
         </div>
       </div>
@@ -333,6 +342,25 @@
       </div>
     </div>
 
+        <div class="modal-overlay hidden" id="lineOverlay">
+      <div class="modal">
+        <div class="modal-header">
+          <div>
+            <h3>รายละเอียดการประชุม</h3>
+            <div class="meta">รูปแบบเดียวกับอีเมลแจ้งผล — คัดลอกไปวางใน LINE ได้เลย</div>
+          </div>
+          <button class="btn-icon" id="lineClose">ปิด ✕</button>
+        </div>
+        <div class="modal-body">
+          <textarea id="lineText" readonly></textarea>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" id="lineCancel">ปิด</button>
+          <button class="btn-primary" id="lineCopy">📋 คัดลอกข้อความ</button>
+        </div>
+      </div>
+    </div>
+
     <div class="toast" id="toast"></div>
 
     <script>
@@ -481,6 +509,7 @@
             <div class="kv"><span class="k">Password</span><span class="v">${escapeHtml(r.password) || "-"}</span></div>
             <div class="kv wide"><span class="k">WebEx / Zoom Link</span><span class="v">${escapeHtml(r.webexLink) || "-"}</span></div>
             <div class="kv wide"><span class="k">หมายเหตุ</span><span class="v">${escapeHtml(r.note) || "-"}</span></div>
+            <div class="kv copy-cell"><button type="button" class="btn-copy" data-copy="${i}" title="ดูรายละเอียด / คัดลอกส่ง LINE" aria-label="ดูรายละเอียดการประชุมเพื่อคัดลอก"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="3" width="8" height="4" rx="1"/><path d="M16 5h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2"/><path d="M9 12h6M9 16h6"/></svg></button></div>
           </div>
         </div>
       `,
@@ -490,6 +519,12 @@
         list.querySelectorAll("button[data-idx]").forEach((btn) => {
           btn.addEventListener("click", () =>
             openModal(rows[Number(btn.dataset.idx)]),
+          );
+        });
+
+        list.querySelectorAll("button[data-copy]").forEach((btn) => {
+          btn.addEventListener("click", () =>
+            openLineModal(rows[Number(btn.dataset.copy)]),
           );
         });
       }
@@ -637,6 +672,64 @@
           CURRENT_FILTER.search = this.value;
           applyFilters(); // ค้นหาจากข้อมูลในเครื่อง ไม่หน่วงเวลารอเซิร์ฟเวอร์
         });
+
+      /* ===== ข้อความรายละเอียดการประชุม (เหมือนอีเมลแจ้งผล) สำหรับคัดลอกส่ง LINE ===== */
+      function buildMeetingMessage(r) {
+        const v = (x) => (x === undefined || x === null || String(x).trim() === "" ? "-" : String(x).trim());
+        const status =
+          r.bookingStatus === "ไม่อนุมัติ"
+            ? "คำขอของท่านไม่ได้รับการอนุมัติ"
+            : r.bookingStatus === "อนุมัติ"
+              ? "คำขอของท่านได้รับการอนุมัติเรียบร้อยแล้ว"
+              : "คำขอของท่านอยู่ระหว่างดำเนินการ";
+        const rows = [
+          ["ชื่อการประชุม", v(r.title)],
+          ["วันที่ประชุม", v(r.meetingDate) + " - " + v(r.endDate)],
+          ["เวลา", v(r.meetingTime)],
+          ["ห้องประชุม", v(r.room)],
+          ["Meeting Room", v(r.meetingRoom)],
+          ["HOST ID", v(r.hostId)],
+          ["Password", v(r.password)],
+          ["WebEx / Zoom Link", v(r.webexLink)],
+          ["สถานะการจอง", v(r.bookingStatus)],
+          ["สถานะกิจกรรม", v(r.activityStatus)],
+          ["หมายเหตุ", v(r.note)],
+        ];
+        return (
+          "ODPC8 - ผลการขอใช้ห้องประชุม\nเรียนคุณ " + v(r.requester) + "\n" + status + "\n\n" +
+          rows.map((x) => x[0] + ": " + x[1]).join("\n")
+        );
+      }
+      function openLineModal(r) {
+        document.getElementById("lineText").value = buildMeetingMessage(r);
+        document.getElementById("lineOverlay").classList.remove("hidden");
+      }
+      function closeLineModal() {
+        document.getElementById("lineOverlay").classList.add("hidden");
+      }
+      function legacyCopy() {
+        const ta = document.getElementById("lineText");
+        ta.focus();
+        ta.select();
+        ta.setSelectionRange(0, ta.value.length);
+        try { return document.execCommand("copy"); } catch (e) { return false; }
+      }
+      function copyLineText() {
+        const text = document.getElementById("lineText").value;
+        const done = (ok) =>
+          showToast(ok ? "คัดลอกแล้ว นำไปวางใน LINE ได้เลย" : "คัดลอกอัตโนมัติไม่ได้ กรุณากดค้างที่ข้อความแล้วเลือกคัดลอก", ok ? "success" : "error");
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(() => done(true), () => done(legacyCopy()));
+        } else {
+          done(legacyCopy());
+        }
+      }
+      document.getElementById("lineClose").addEventListener("click", closeLineModal);
+      document.getElementById("lineCancel").addEventListener("click", closeLineModal);
+      document.getElementById("lineCopy").addEventListener("click", copyLineText);
+      document.getElementById("lineOverlay").addEventListener("click", (e) => {
+        if (e.target === e.currentTarget) closeLineModal();
+      });
 
       function showToast(message, type) {
         const toast = document.getElementById("toast");
